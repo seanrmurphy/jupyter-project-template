@@ -1,0 +1,13 @@
+version: '3.4'
+services:
+  jupyter:
+    image: "${BASE_IMAGE_NAME}-dev"
+    build:
+      context: .
+      target: dev_image
+    ports:
+      - '8888:8888'
+    volumes:
+      - .:/home/jovyan/work
+    environment:
+      TZ: Pacific/Auckland
