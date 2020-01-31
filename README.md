@@ -5,7 +5,7 @@ Jupyter notebooks. Ideal for data science projects.
 
 ## Features
 
-* Run a local JupyterHub notebook server.
+* Run a local Jupyter notebook server.
 * Reference custom Python modules from your notebooks for better code
   organisation.
 * Includes a Makefile to organise commonly run commands.
@@ -25,8 +25,9 @@ installed on your host:
   you don't mind running the commands in the Makefile directly)
 
 **Note:** If you use [Git bash](https://git-scm.com/downloads) on
-Windows and also [install `make`](https://superuser.com/a/701175) into
-Git bash, then you should be able to run this project on Windows.
+Windows and also
+[install `make`](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058)
+into Git bash, then you should be able to run this project on Windows.
 
 ## Basic Usage
 
