@@ -5,7 +5,7 @@ Jupyter notebooks. Ideal for data science projects.
 
 ## Features
 
-* Run a local Jupyter notebook server.
+* Run a local JupyterLab server.
 * Reference custom Python modules from your notebooks for better code
   organisation.
 * Includes a Makefile to organise commonly run commands.
@@ -41,13 +41,13 @@ into Git bash, then you should be able to run this project on Windows.
      downloaded.
 4. Browse to http://localhost:8888 and enter the token displayed in
    the terminal (or just follow the link in the terminal).
-5. Work in Python notebooks, with the ability to import code from your
-   own custom Python modules and their dependencies, e.g.: `from
-   mypymodule import greeting`.
+5. Work in Python notebooks inside `notebooks/`, with the ability to
+   import code from your own custom Python modules and their
+   dependencies, e.g.: `from mypymodule import greeting`.
 
 ## Deployment
 
-If you want to package up the Jupyter notebook server on a host that
+If you want to package up the JupyterLab server on a host that
 cannot download and build Docker images (e.g. because it has no
 Internet connection), you can build and export a self-contained Docker
 image to move to that host:
@@ -62,7 +62,7 @@ image to move to that host:
    restart itself if the process dies or the machine restarts).
 5. Run `make stop` to stop the background server process.
 
-**Note:** The Jupyter notebook server is intended for use by a single
+**Note:** The JupyterLab server is intended for use by a single
 user (multiple users visiting the same notebook will cause issues). If
 you wish to deploy your notebooks for use by multiple users, you may
 wish to look into [JupyterHub](https://jupyter.org/hub) or
@@ -90,10 +90,19 @@ following cell at the top of each notebook:
 
 ### Dependencies
 
-To add Python module dependencies, simply add them to the
-`install_requires` list of your module's `setup.py`. They will be
-installed the next time you run `make run`, or you can install them
-without restarting your notebook server by running: `make deps`.
+To add Python module dependencies:
+
+1. Start a shell inside the Docker container: `make run-bash`
+2. Move into your module's directory: `cd mypymodule`
+3. Use poetry to add the dependency: `poetry add <your-dependency>`
+
+When `make run` is run it will alway ensure all dependencies are
+installed, and you can also manually install dependencies by running:
+`make deps`.
+
+If you have poetry installed on your host, your `poetry config
+cache-dir` will be mounted into the Docker container in order to avoid
+re-downloading dependencies across projects.
 
 ### Linting
 
@@ -107,6 +116,11 @@ linting contained in your modules with: `make test`.
 
 An HTML code-coverage reported will be generated for each module at:
 `<module-dir>/test/coverage/index.html`.
+
+### Type-Checking
+
+You can run [mypy](https://mypy.readthedocs.io/en/stable/)
+type-checking on your modules with: `make mypy`.
 
 ## Managing Data
 
@@ -167,18 +181,92 @@ associated with any image tags/names.
 
 ## Using Jupyter from Emacs
 
-Did you know you can work with Jupyter notebooks from Emacs? All you
-need to do is install
-[EIN](http://millejoh.github.io/emacs-ipython-notebook/): `M-x
-package-refresh-contents <Enter> M-x package-install <Enter> ein`
+There are two primary ways you can work with Jupyter from Emacs:
 
-### Connecting EIN to your Jupyter server
+### Driving a JupyterLab Console from Emacs
+
+With [`jupyter-emacs`](https://github.com/nnicandro/emacs-jupyter),
+you can use Emacs to run (Python or other) code in a browser-based
+JupyterLab Console session that supports rich output (e.g. DataFrame
+tables, plots, maps, etc.).
+
+#### Installing
+
+```
+M-x package-refresh-contents <Enter>
+M-x package-install <Enter>
+jupyter
+```
+
+You may also like to add the following configuration to your
+`init.el`:
+
+```elisp
+(require 'jupyter)
+
+;; Don't display these buffers when output is added to them, since we
+;; will be viewing rich output in the browser console session
+(setq custom-jupyter-quiet-buffers '("*jupyter-display*" "*jupyter-output*" "*jupyter-traceback*"))
+(when (not (boundp 'orig-jupyter-display-current-buffer-reuse-window))
+ (setq orig-jupyter-display-current-buffer-reuse-window (symbol-function 'jupyter-display-current-buffer-reuse-window)))
+(defun jupyter-display-current-buffer-reuse-window (&optional msg-type alist &rest actions)
+  (when (not (member (buffer-name) custom-jupyter-quiet-buffers))
+    (apply orig-jupyter-display-current-buffer-reuse-window msg-type alist actions)))
+
+;; Add custom-jupyter-eval-sentence for evaluating contiguous blocks of code
+(defun custom-jupyter-eval-sentence ()
+  (interactive)
+  (when-let* ((bounds (bounds-of-thing-at-point 'sentence)))
+    (cl-destructuring-bind (beg . end) bounds
+      (jupyter-eval-region beg end))))
+(define-key jupyter-repl-interaction-mode-map (kbd "C-c C-c") #'custom-jupyter-eval-sentence)
+```
+
+#### Workflow
+
+1. Ensure `make run` is running
+2. Open your notebook in JupyterLab
+3. Right-click on the notebook's tab, and select `New Console for
+   Notebook`
+4. Right-click anywhere in the newly opened console, and ensure that
+   `Show All Kernel Activity` is checked
+5. In Emacs, run: `M-x jupyter-server-list-kernels` (URL:
+   http://localhost:8888; use the token provided in the output of
+   `make run`)
+6. In the `*jupyter-kernels*` buffer, select your running kernel
+7. Open a file or buffer with code you want to execute in the console,
+   and run `M-x jupyter-repl-associate-buffer`
+8. Execute lines of code with:
+   * `C-c C-b`: Execute the entire buffer
+   * `C-x C-e`: Execute the current line or selected region
+   * `C-c C-c`: Execute the current "sentence" (contiguous lines of code)
+9. If you want to save some output in the notebook (e.g. a table or
+   plot), add a notebook cell from JupyterLab to render that output.
+10. You can even use JupyterLab's debugger to add breakpoints to
+    previously run blocks of code, which will be triggered when
+    re-running the same block.
+
+### Running a Notebook
+
+If you don't need rich outputs in your notebooks, you may prefer to
+use [EIN](http://millejoh.github.io/emacs-ipython-notebook/) to
+interact with notebooks solely from Emacs.
+
+#### Installing EIN
+
+```
+M-x package-refresh-contents <Enter>
+M-x package-install <Enter>
+ein
+```
+
+#### Connecting EIN to your Jupyter server
 
 1. Ensure `make run` is running.
 2. `M-x ein:login` (URL: http://127.0.0.1:8888, Password: token from `make run`)
 3. `M-x ein:notebooklist-open`
 
-### Common EIN Commands
+#### Common EIN Commands
 
 ```
 M-<enter> - Execute cell and move to next.

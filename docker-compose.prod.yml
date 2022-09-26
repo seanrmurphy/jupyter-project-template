@@ -3,5 +3,10 @@ services:
   jupyter:
     image: "${BASE_IMAGE_NAME}-prod"
     build:
+      context: .
       target: prod_image
+    ports:
+      - '8888:8888'
+    environment:
+      TZ: Pacific/Auckland
     restart: unless-stopped

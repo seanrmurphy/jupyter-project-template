@@ -1,22 +1,18 @@
+# After changing BASE_IMAGE_NAME, make sure to update .env
 BASE_IMAGE_NAME=myproject
-# Extend the space-separated list of your Python modules/packages in
-# the root directory of this project to install them (with their
-# dependencies) for use in your notebooks, and to run other commands
-# on them (like linting and unit tests).
-PYTHON_MODULES=mypymodule
+POETRY_CACHE_DIR=`command -v poetry >/dev/null 2>&1 && poetry config cache-dir || echo ".poetry"`
+
+.PHONY: env build deps clear-build export-image import-image run run-prod stop bash sudo-bash run-bash run-sudo-bash lint test mypy
 
 # Building and dependencies
 env:
-	echo "BASE_IMAGE_NAME=${BASE_IMAGE_NAME}" > .env
+	if [ ! -f ".env" ]; then echo "BASE_IMAGE_NAME=${BASE_IMAGE_NAME}\nPOETRY_CACHE_DIR=${POETRY_CACHE_DIR}" > .env; fi
 build: env
 	docker-compose build \
 		--build-arg GROUP_ID=`id -g` \
 		--build-arg USER_ID=`id -u`
 deps: build
-	for module in $(PYTHON_MODULES); do \
-		docker-compose run --rm  --workdir="/home/jovyan/work" jupyter \
-			pip install --user -e "$${module}[dev]" ; \
-	done
+	docker-compose run --rm jupyter poetry install
 clear-build:
 	docker-compose rm
 	docker-compose -f docker-compose.yml -f docker-compose.prod.yml rm
@@ -51,15 +47,11 @@ run-sudo-bash:
 
 # Python module utilities
 lint:
-	for module in $(PYTHON_MODULES); do \
-		docker-compose run --rm --workdir="/home/jovyan/work" jupyter \
-			flake8 "$${module}"; \
-	done
+	docker-compose run --rm jupyter poetry run flake8 lib/*
 test:
-	for module in $(PYTHON_MODULES); do \
-		docker-compose run --rm --workdir="/home/jovyan/work/$${module}" jupyter \
-			pytest \
-			--cov="$${module}" \
-			--cov-report="html:test/coverage" \
-			--cov-report=term ; \
-	done
+	docker-compose run --rm jupyter poetry run pytest \
+		--cov="lib" \
+		--cov-report="html:test/coverage" \
+		--cov-report=term ;
+mypy:
+	docker-compose run --rm jupyter poetry run mypy lib/*

@@ -8,6 +8,7 @@ services:
     ports:
       - '8888:8888'
     volumes:
-      - .:/home/jovyan/work
+      - .:/home/coder/src
+      - "${POETRY_CACHE_DIR}:/home/coder/.cache/pypoetry"
     environment:
       TZ: Pacific/Auckland

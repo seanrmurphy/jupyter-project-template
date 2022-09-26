@@ -1,6 +1,10 @@
-.env
-.pip-packages/
+.poetry/
 images/
+notebooks/.ipynb_checkpoints/
+.coverage
+
+# Files that may contain sensitive information
+.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

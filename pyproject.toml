@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "mypymodule"
+version = "0.1.0"
+description = ""
+authors = ["Ben Denham <ben@denham.nz>"]
+packages = [
+    { include = "mypymodule", from = "lib" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+jupyterlab = "^3.4.7"
+mypy = "^0.971"
+flake8 = "^5.0.4"
+pytest = "7.1.2"
+pytest-cov = "^3.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

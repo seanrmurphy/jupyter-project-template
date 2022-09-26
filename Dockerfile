@@ -1,7 +1,5 @@
 # We will run the dev_image for local development.
-# You may want to choose a different base image from:
-# https://jupyter-docker-stacks.readthedocs.io/en/latest/using/selecting.html
-FROM jupyter/tensorflow-notebook as dev_image
+FROM python:3.10 as dev_image
 MAINTAINER ben@denham.nz
 
 
@@ -19,27 +17,26 @@ MAINTAINER ben@denham.nz
 
 
 # A section like the following can be useful when your base image runs
-# as the root user (not necessary for Jupyter Docker images). This
-# will create a user with the same uid and gid as our host user,
-# meaning files created in the image after this step and during
-# container will be owned by our user on the host.
+# as the root user. This will create a user with the same uid and gid
+# as our host user, meaning files created in the image after this step
+# and during container will be owned by our user on the host.
 
 ARG GROUP_ID=1000
 ARG USER_ID=1000
-# RUN groupadd --gid $GROUP_ID coder
-# RUN useradd --uid $USER_ID --gid coder --shell /bin/bash --create-home coder
-# USER coder
+RUN groupadd --gid $GROUP_ID coder
+RUN useradd --uid $USER_ID --gid coder --shell /bin/bash --create-home coder
+USER coder
 
+ENV PATH=$PATH:/home/coder/.local/bin
+RUN pip install poetry
 
-# Pip packages will be installed in a directory we can mount from the
-# host as a volume.
-ENV PYTHONUSERBASE=/home/jovyan/work/.pip-packages
-ENV PATH=$PATH:/home/jovyan/work/.pip-packages/bin
+RUN mkdir /home/coder/src
+WORKDIR /home/coder/src
 
-RUN touch /home/jovyan/CREATE_FILES_IN_WORK_DIRECTORY__FILES_CREATED_HERE_WILL_BE_LOST
-COPY ./jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
+ENV JUPYTERLAB_SETTINGS_DIR=/home/coder/src/jupyterlab/config
+ENV JUPYTERLAB_WORKSPACES_DIR=/home/jovyan/work/jupyterlab/workspaces
 
-
+CMD ["poetry", "run", "jupyter", "lab", "--ip", "0.0.0.0"]
 
 # The prod_image build step is an optional section that allows you to
 # package your entire app into a self-contained Docker image that can
@@ -47,4 +44,4 @@ COPY ./jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.
 # notebooks, source-code, and pip-packages, but not the directories in
 # .dockerignore.
 FROM dev_image as prod_image
-COPY . /home/jovyan/work
+COPY . /home/coder/src
