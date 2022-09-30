@@ -51,7 +51,7 @@ lint:
 test:
 	docker-compose run --rm jupyter poetry run pytest \
 		--cov="lib" \
-		--cov-report="html:test/coverage" \
+		--cov-report="html:tests/coverage" \
 		--cov-report=term ;
 mypy:
 	docker-compose run --rm jupyter poetry run mypy lib/*
