@@ -5,13 +5,25 @@ Jupyter notebooks. Ideal for data science projects.
 
 ## Features
 
-* Run a local JupyterLab server.
+* Run a local [JupyterLab](https://jupyter.org/) server.
 * Reference custom Python modules from your notebooks for better code
   organisation.
 * Includes a Makefile to organise commonly run commands.
-* Runs all code inside Docker containers to minimise host
+* Runs all code inside [Docker](https://www.docker.com/) containers to minimise host
   dependencies.
+* Deploy notebooks via
+  [Voilà](https://github.com/voila-dashboards/voila) with
+  [Docker](https://www.docker.com/).
 * Basic setup for managing large data files.
+
+## Project Structure
+
+* `lib/` - Python modules containing the primary source code.
+* `notebooks/` - Notebooks used during development.
+* `app/` - Files for the deployable Voilà application.
+* `tests/` - Tests for the Python modules in `lib/`.
+* `data/` - Directory for storing development data files referenced by
+  `notebooks/`.
 
 ## Dependencies
 
@@ -29,56 +41,38 @@ Windows and also
 [install `make`](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058)
 into Git bash, then you should be able to run this project on Windows.
 
-## Basic Usage
+## Development
 
 1. Ensure the dependencies listed above are installed.
 2. Change the `BASE_IMAGE_NAME` at the top of the `Makefile`.
-3. Run `make run` in this directory.
+3. Run `make dev` in this directory.
    * This will perform all Docker image build steps and dependency
      installations every time you run it, so that you can never forget
      to rebuild. The first time you run this, it make take some time
      for the base Docker image and other dependencies to be
      downloaded.
-4. Browse to http://localhost:8888 and enter the token displayed in
-   the terminal (or just follow the link in the terminal).
-5. Work in Python notebooks inside `notebooks/`, with the ability to
-   import code from your own custom Python modules and their
-   dependencies, e.g.: `from mypymodule import greeting`.
-
-## Deployment
-
-If you want to package up the JupyterLab server on a host that
-cannot download and build Docker images (e.g. because it has no
-Internet connection), you can build and export a self-contained Docker
-image to move to that host:
-
-1. Run `make export-image` on a machine that has the required Internet
-   connection to download Docker images and dependencies.
-2. Copy the `images/` directory to the same location within the
-   project on the target host.
-3. Run `make import-image` on the target host.
-4. Run `make run-prod` on the target host to start the Jupyter
-   notebook server in the background (it will also be configured to
-   restart itself if the process dies or the machine restarts).
-5. Run `make stop` to stop the background server process.
-
-**Note:** The JupyterLab server is intended for use by a single
-user (multiple users visiting the same notebook will cause issues). If
-you wish to deploy your notebooks for use by multiple users, you may
-wish to look into [JupyterHub](https://jupyter.org/hub) or
-[Voilà](https://github.com/voila-dashboards/voila) (for non-editable
-notebooks).
+4. To develop with JupyterLab:
+   1. Browse to http://localhost:8888 and enter the token displayed in
+      the terminal (or just follow the link in the terminal).
+   2. Work in the development Python notebooks inside `notebooks/`,
+      with the ability to import code from your own custom Python
+      modules and their dependencies, e.g.: `from mypymodule import stuff`.
+5. To view the development Voila server:
+   1. Browse to http://localhost:8866
+   2. You will see a list of available application notebooks to run
+      from `app/voila-notebooks` (you may add/edit these notebooks
+      through JupyterLab).
 
 ## Python Module Development
 
 In order to better structure and share Python code between Jupyter
-notebooks, you can add your code to custom Python packages/modules
-contained in this directory. An example `mypymodule` is provided, but
-you can add more directories - if you do, just make sure to update the
-`PYTHON_MODULES` list in the `Makefile`, e.g.:
-`PYTHON_MODULES=mypymodule1 mypymodule2`.
+notebooks, you should primarily add code to custom Python
+packages/modules contained in the `lib/` directory. An example
+`mypymodule` is provided, but you can add more directories - if you
+do, just make sure to update the `packages` list in the
+`pyproject.toml`.
 
-We recommend that you automatically reload your Python modules in
+It is recommended that you automatically reload your Python modules in
 Jupyter notebooks so that any changes you make immediately take effect
 without restarting the notebook kernel. To do so, include and run the
 following cell at the top of each notebook:
@@ -92,11 +86,10 @@ following cell at the top of each notebook:
 
 To add Python module dependencies:
 
-1. Start a shell inside the Docker container: `make run-bash`
-2. Move into your module's directory: `cd mypymodule`
-3. Use poetry to add the dependency: `poetry add <your-dependency>`
+1. Start a shell inside a dev Docker container: `make run-bash service=jupyter`
+2. Use poetry to add the dependency: `poetry add <your-dependency>`
 
-When `make run` is run it will alway ensure all dependencies are
+When `make dev` is run it will alway ensure all dependencies are
 installed, and you can also manually install dependencies by running:
 `make deps`.
 
@@ -104,12 +97,19 @@ If you have poetry installed on your host, your `poetry config
 cache-dir` will be mounted into the Docker container in order to avoid
 re-downloading dependencies across projects.
 
-### Linting
+To update the versions of Python packages in use, run: `make
+deps-update`.
+
+### Code Checking
+
+Running `make check` will perform the following checks:
+
+#### Linting
 
 You can run [flake8](http://flake8.pycqa.org/en/latest/) linting on
 your modules with: `make lint`.
 
-### Testing
+#### Testing
 
 You can run [pytest](https://docs.pytest.org/en/latest/) unit tests
 linting contained in your modules with: `make test`.
@@ -117,10 +117,28 @@ linting contained in your modules with: `make test`.
 An HTML code-coverage reported will be generated for each module at:
 `<module-dir>/test/coverage/index.html`.
 
-### Type-Checking
+#### Type-Checking
 
 You can run [mypy](https://mypy.readthedocs.io/en/stable/)
 type-checking on your modules with: `make mypy`.
+
+## Deployment
+
+If you want to package up the Voilà app as a self-contained Docker
+image with no external dependencies, you can build and export a
+self-contained Docker image to move to that host:
+
+1. Build the production application image: `make prod-build`
+2. Test the app as it will run in production: `make prod-run`
+  * If files needed to run are missing, ensure they are added in the
+    `prod_image` section of the Dockerfile.
+  * To debug the contents of the image, use `make prod-run-bash` and
+    `make prod-run-sudo-bash`.
+1. Run `make prod-export-image` to export the production Docker image.
+2. Copy the `app/images/` directory to the same location within the
+   project on the target host.
+3. Run `make prod-import-image` on the target host.
+4. Run `make prod-run` on the target host.
 
 ## Managing Data
 
@@ -144,9 +162,11 @@ Git repository to exclude the outputs of notebook cells when running
 ### Opening a Shell
 
 If you would like to open a bash shell inside the Docker container
-running the Jupyter notebook server, use: `make bash` or `make
-sudo-bash`. If `make run` is not currently running, you can instead
-use `make run-bash` or `make run-sudo-bash`.
+running the Jupyter notebook server or Voila app, use: `make bash
+service=<service>` or `make sudo-bash service=<service>` (where
+`<service>` is either `app` or `jupyter`). If `make dev` is not
+currently running, you can instead use `make run-bash
+service=<service>` or `make run-sudo-bash service=<service>`.
 
 ### System Dependencies and Other OS Configurations
 
@@ -154,10 +174,11 @@ To install system packages or otherwise alter the Docker image's
 operating system, you can make changes in the Dockerfile. An example
 section that will allow you to install `apt` packages is included.
 
-### Changing the Jupyter Server Port
+### Changing Dev Server Ports
 
-Change the `ports` entry in `docker-compose.yml` to:
-`'YOURPORT:8888'`, then re-run `make run`.
+You can change the `ports` entry in `docker-compose.yml` for either
+`app` or `jupyter`. For example, to change the `jupyter` port, set its
+value to `'127.0.0.1:YOURPORT:8888'`, then re-run `make dev`.
 
 ### .dockerignore
 
@@ -224,7 +245,7 @@ You may also like to add the following configuration to your
 
 #### Workflow
 
-1. Ensure `make run` is running
+1. Ensure `make dev` is running
 2. Open your notebook in JupyterLab
 3. Right-click on the notebook's tab, and select `New Console for
    Notebook`
@@ -232,7 +253,7 @@ You may also like to add the following configuration to your
    `Show All Kernel Activity` is checked
 5. In Emacs, run: `M-x jupyter-server-list-kernels` (URL:
    http://localhost:8888; use the token provided in the output of
-   `make run`)
+   `make dev`)
 6. In the `*jupyter-kernels*` buffer, select your running kernel
 7. Open a file or buffer with code you want to execute in the console,
    and run `M-x jupyter-repl-associate-buffer`
@@ -262,8 +283,8 @@ ein
 
 #### Connecting EIN to your Jupyter server
 
-1. Ensure `make run` is running.
-2. `M-x ein:login` (URL: http://127.0.0.1:8888, Password: token from `make run`)
+1. Ensure `make dev` is running.
+2. `M-x ein:login` (URL: http://127.0.0.1:8888, Password: token from `make dev`)
 3. `M-x ein:notebooklist-open`
 
 #### Common EIN Commands

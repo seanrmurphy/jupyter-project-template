@@ -1,14 +1,31 @@
 version: '3.4'
 services:
+  app:
+    image: "${BASE_IMAGE_NAME}-dev"
+    build:
+      context: .
+      target: dev_image
+    ports:
+      # Use localhost so that we don't expose this to other machines.
+      - '127.0.0.1:8866:8866'
+    volumes:
+      - .:/home/coder/src
+      - "${POETRY_CACHE_DIR}:/home/coder/.cache/pypoetry"
+    environment:
+      - VOILA_DEBUG=true
+    command: ["poetry", "run", "python", "app/voila-app.py"]
   jupyter:
     image: "${BASE_IMAGE_NAME}-dev"
     build:
       context: .
       target: dev_image
     ports:
-      - '8888:8888'
+      # Use localhost so that we don't expose this to other machines.
+      - '127.0.0.1:8888:8888'
     volumes:
       - .:/home/coder/src
       - "${POETRY_CACHE_DIR}:/home/coder/.cache/pypoetry"
     environment:
-      TZ: Pacific/Auckland
+      - JUPYTERLAB_SETTINGS_DIR=/home/coder/src/jupyterlab/config
+      - JUPYTERLAB_WORKSPACES_DIR=/home/coder/src/jupyterlab/workspaces
+    command: ["poetry", "run", "jupyter", "lab", "--ip", "0.0.0.0"]

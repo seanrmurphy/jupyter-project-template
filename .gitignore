@@ -1,6 +1,8 @@
+# Generated files
 .poetry/
-images/
-notebooks/.ipynb_checkpoints/
+.ipynb_checkpoints/
+app/images/
+app/.venv/
 .coverage
 
 # Files that may contain sensitive information
@@ -16,4 +18,3 @@ __pycache__/
 
 # Generic
 *~
-

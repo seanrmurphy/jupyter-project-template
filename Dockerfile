@@ -1,5 +1,5 @@
 # We will run the dev_image for local development.
-FROM python:3.10 as dev_image
+FROM python:3.11 as dev_image
 MAINTAINER ben@denham.nz
 
 
@@ -28,20 +28,32 @@ RUN useradd --uid $USER_ID --gid coder --shell /bin/bash --create-home coder
 USER coder
 
 ENV PATH=$PATH:/home/coder/.local/bin
-RUN pip install poetry
+RUN pip install poetry poetry-plugin-bundle
 
 RUN mkdir /home/coder/src
 WORKDIR /home/coder/src
 
-ENV JUPYTERLAB_SETTINGS_DIR=/home/coder/src/jupyterlab/config
-ENV JUPYTERLAB_WORKSPACES_DIR=/home/jovyan/work/jupyterlab/workspaces
+RUN mkdir -p /home/coder/src/app/voila-template
+RUN mkdir -p /home/coder/.local/share/jupyter/voila/templates/
+RUN ln -s /home/coder/src/app/voila-template /home/coder/.local/share/jupyter/voila/templates/customvoila
 
-CMD ["poetry", "run", "jupyter", "lab", "--ip", "0.0.0.0"]
 
 # The prod_image build step is an optional section that allows you to
 # package your entire app into a self-contained Docker image that can
-# be run on another machine. The resulting image will contain all
-# notebooks, source-code, and pip-packages, but not the directories in
-# .dockerignore.
+# be run on another machine.
 FROM dev_image as prod_image
-COPY . /home/coder/src
+
+# Copy in pre-built venv and activate venv:
+# https://pythonspeed.com/articles/activate-virtualenv-dockerfile/
+COPY --chown=coder:coder app/.venv /home/coder/src/app/.venv
+ENV VIRTUAL_ENV=/home/coder/src/app/.venv
+RUN python -m venv $VIRTUAL_ENV
+ENV PATH="/home/coder/src/app/.venv/bin:$PATH"
+
+# Mount changeable notebook and template content last.
+COPY --chown=coder:coder app/voila-app.py /home/coder/src/app/voila-app.py
+COPY --chown=coder:coder app/voila-template /home/coder/src/app/voila-template
+COPY --chown=coder:coder app/voila-notebooks/*.ipynb /home/coder/src/app/voila-notebooks/
+
+EXPOSE 8866
+CMD ["python", "app/voila-app.py"]
