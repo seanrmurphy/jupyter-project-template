@@ -6,4 +6,5 @@ updates from ec2!
 
 More updates from ec2 from Sean Morphy!
 
+Testing from Ec2 - the last one was from fargate!
 
