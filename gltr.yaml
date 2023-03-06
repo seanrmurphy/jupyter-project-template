@@ -1,0 +1,33 @@
+project_id: 5425de09-71b0-428c-bc25-859f36ab2d16
+project_name: jupyter-project-template
+container_image: gltr/minimal-notebook
+gpu_required: false
+default_execution_platform: ec2
+git_repo: git@github.com:seanrmurphy/jupyter-project-template.git
+project_public_key: ""
+users:
+    - name: Sean Murphy
+      email: sean.murphy@sdsc.ethz.ch
+      ssh_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCeUnxYGfGebTcsrRHgX0MDyxXv7zxB0coC8bpj8FUntB798fV6z+ZS8AT2jfhlk64RUccs/VSFYYyJyLXSyFsAIJReqEMjBK0Gyq63eMFwiqycvWW5n+tNWH98AlSGurl6aAGhUbL67s12mdF3/xAcyQw/U5hPNxbLuT1g6k0Rn9GCVjA++d76W9xLEYp/rat0Mwp+Rys7/D4Y0x8FLJxl3OqtW+Q5BNDTR0BRV17YtVhchiWwQI063nD/l/3+Vuuw7HvgoKskGTLxEruqoACgq16ld6MFHZMX0HcgyEfMkAXwMC5RhFIA0wS+ueGe5GWPj6UQklEpL1PCh8V5uqVrSNkTkCH8FaK9Z0p4rC43euUalOgm8ujPrvJbiWCoQbtZwR3MpD74pgGBt4HcJlDv2LKwnSo11jB+BUR0zPZO99UBuTDcLtJRfCbKLhnPnuLbRPRD4tEHfFnHjJqG6bRD9hRoQVM0s5TKPQJfH3ZOtmRi6FPXmVabLxfFbxqYQFmalLZHc63UApGUeKogxPTQoRPn1nros13JM5F9CVwe2uTELUWbDLkP8oJHPhd3nDstu88qpdCcYNBcgSrxU36YvtcV3ABIaxUFqFL49rqz9J7dnSI4uXeoLHGlv8qe0k9BeD2G3K0QWRHpWZ7VxMaxfHXIvOM6i7ddWtkCNU7EvQ== cardno:000618245504
+execution_platform_configs:
+    - type: docker
+      configuration:
+        gpu_enabled: false
+    - type: ecs-fargate
+      configuration:
+        cpu_requirements: 2048
+        memory_requirements: 4096
+        cluster_name: gltr-cluster
+        subnet_id: subnet-0d4087461eb829d3b
+        security_group_id: sg-0aae75bd429e3a47e
+    - type: ec2
+      configuration:
+        gpu_required: false
+        default_instance_type: t2.medium
+        default_image: ami-0a29e902d4020927e
+        key_name: sean-sdsc-gpg-key
+        subnet_id: subnet-0d4087461eb829d3b
+        security_group_id: sg-0e28a8e8fe4d99b73
+ports:
+    - 8888
+    - 22
